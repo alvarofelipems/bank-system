@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incomes
+  labels:
+    app: incomes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: incomes
+  template:
+    metadata:
+      labels:
+        app: incomes
+    spec:
+      containers:
+      - name: incomes
+        image: 192.168.0.51:5000/bank-system/incomes
+        ports:
+        - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: incomes-database
+  labels:
+    app: incomes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: incomes
+  template:
+    metadata:
+      labels:
+        app: incomes
+    spec:
+      containers:
+      - name: incomes-database
+        image: mariadb
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MARIADB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: incomes-database
+              key: DB_DATABASE
+        - name: MARIADB_USER
+          valueFrom:
+            configMapKeyRef:
+              name: incomes-database
+              key: DB_USERNAME
+        - name: MARIADB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: incomes-database
+              key: DB_PASSWORD
+        - name: MARIADB_ROOT_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: incomes-database
+              key: DB_PASSWORD_ROOT
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: incomes
+data:
+  COMPOSE_PROJECT_NAME: "bank-system"
+  APP_NAME: "Incomes"
+  APP_ENV: "local"
+  APP_KEY: "teste"
+  APP_DEBUG: "true"
+  APP_URL: "http://localhost"
+  APP_TIMEZONE: "UTC"
+  LOG_CHANNEL: "stderr"
+  LOG_SLACK_WEBHOOK_URL: ""
+  CACHE_DRIVER: "file"
+  QUEUE_CONNECTION: "sync"
+  FILESYSTEM_DRIVER: "s3"
+  AWS_ACCESS_KEY_ID: "wX0EzvTa9PtyXo28"
+  AWS_SECRET_ACCESS_KEY: "UYrekQgtjbFWIBMmWx6kbyC4kYNYF2cg"
+  AWS_DEFAULT_REGION: "us-east-1"
+  AWS_BUCKET: "checks"
+  AWS_ENDPOINT: "http://192.168.0.111:9000/checks"
+  AWS_URL: "http://localhost:8900"
+  AWS_USE_PATH_STYLE_ENDPOINT: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: incomes-database
+data:
+  DB_CONNECTION: "mysql"
+  DB_HOST: "database-income"
+  DB_PORT: "3306"
+  DB_DATABASE: "income"
+  DB_USERNAME: "income"
+  DB_PASSWORD: "password"
+  DB_PASSWORD_ROOT: "root"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: incomes
+  namespace: bank
+  labels:
+    app: incomes
+spec:
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  selector:
+    app: incomes
+  type: ClusterIP
+  sessionAffinity: None
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack
+  internalTrafficPolicy: Cluster

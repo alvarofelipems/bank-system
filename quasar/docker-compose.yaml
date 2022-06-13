@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  quasar:
+    build:
+      context: .
+      target: production-stage
+      dockerfile: ./Dockerfile
+    ports:
+      - "88:80"
+    # volumes:
+    #   - .:/app
+    networks:
+      - api-gateway-network
+
+networks:
+  api-gateway-network:
+    name: bank-system_api-gateway-network
+    external: true

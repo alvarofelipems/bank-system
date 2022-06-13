@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  expenses:
+    env_file: .env
+    image: 192.168.0.51:5000/bank-system/expenses
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: php -S 0.0.0.0:80 -t public
+    ports:
+      - 83:80
+    volumes:
+      - .:/var/www
+      - /var/www/vendor
+    networks:
+      - database-network
+      - api-gateway-network
+
+  database-expenses:
+    image: mariadb
+    environment:
+      - MARIADB_DATABASE=${DB_DATABASE}
+      - MARIADB_USER=${DB_USERNAME}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=root
+    networks:
+      - database-network
+    volumes:
+      - database-expenses:/var/lib/mysql
+
+networks:
+  database-network:
+    driver: bridge
+  api-gateway-network:
+    name: bank-system_api-gateway-network
+    external: true
+
+volumes:
+  database-expenses:
+    driver: local

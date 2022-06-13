@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  krakend:
+    image: 192.168.0.51:5000/bank-system/api-gateway
+    build:
+      dockerfile: Dockerfile
+      context: .
+    ports:
+      - ${PORT}:8080
+    volumes:
+      - ./config/:/etc/krakend/
+    networks:
+      - api-gateway-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: krakend run -d -c krakend.json
+
+networks:
+  api-gateway-network:
+    driver: bridge

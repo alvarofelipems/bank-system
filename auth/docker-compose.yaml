@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  keycloak:
+    image: 192.168.0.51:5000/bank-system/auth
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - ${PORT}:${KEYCLOAK_HTTP_PORT}
+    environment:
+      - DB_VENDOR=POSTGRES
+      - DB_ADDR=keycloak-database
+      - DB_DATABASE=${KEYCLOAK_DB_DATABASE}
+      - DB_USER=${KEYCLOAK_DB_USER}
+      - DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+      - KEYCLOAK_FRONTEND_URL=${KEYCLOAK_FRONTEND_URL}
+      - KEYCLOAK_HTTP_PORT=${KEYCLOAK_HTTP_PORT}
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    networks:
+      - keycloak-network
+      - api-gateway-network
+      - auth-network
+    depends_on:
+      - keycloak-database
+
+  keycloak-database:
+    image: postgres
+    volumes:
+      - .docker/postgress/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_ROOT_PASSWORD: ${KEYCLOAK_DB_PASSWORD_ROOT}
+      POSTGRES_DATABASE: ${KEYCLOAK_DB_DATABASE}
+      POSTGRES_USER: ${KEYCLOAK_DB_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    networks:
+      - keycloak-network
+
+# Docker Networks
+networks:
+  auth-network:
+    driver: bridge
+  keycloak-network:
+    driver: bridge
+  api-gateway-network:
+    external: true
+    name: ${COMPOSE_PROJECT_NAME}_api-gateway-network

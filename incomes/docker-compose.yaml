@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  incomes:
+    env_file: .env
+    image: 192.168.0.51:5000/bank-system/incomes
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: php -S 0.0.0.0:80 -t public
+    ports:
+      - 82:80
+    volumes:
+      - .:/var/www
+      - /var/www/vendor
+    networks:
+      - minio
+      - database-network
+      - api-gateway-network
+
+  database-income:
+    image: mariadb
+    environment:
+      - MARIADB_DATABASE=${DB_DATABASE}
+      - MARIADB_USER=${DB_USERNAME}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+      - MARIADB_ROOT_PASSWORD=root
+    networks:
+      - database-network
+    volumes:
+      - database:/var/lib/mysql
+
+  minio:
+    image: 'minio/minio:latest'
+    ports:
+      - '${FORWARD_MINIO_PORT:-9000}:9000'
+      - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+    environment:
+      MINIO_ROOT_USER: 'minio'
+      MINIO_ROOT_PASSWORD: 'password'
+    volumes:
+      - 'minio:/data/minio'
+    networks:
+      - minio
+    command: minio server /data/minio --address 0.0.0.0:9000 --console-address ":${FORWARD_MINIO_CONSOLE_PORT:-8900}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      retries: 3
+      timeout: 5s
+
+networks:
+  minio:
+    driver: bridge
+  database-network:
+    driver: bridge
+  api-gateway-network:
+    name: bank-system_api-gateway-network
+    external: true
+
+volumes:
+  minio:
+    driver: local
+  database:
+    driver: local
